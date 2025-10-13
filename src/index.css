@@ -1,0 +1,20 @@
+:root {
+  --bg: #070a0f;
+  --surface: #0d1118;
+  --surface-hover: #151b25;
+  --divider: #1e2530;
+  --text-primary: #e5e7eb;
+  --text-secondary: #94a3b8;
+  --accent: #00aeef;
+  --accent-hover: #1d4ed8;
+  --accent-gradient: linear-gradient(90deg, #00aeef 0%, #2563eb 100%);
+  --success: #10b981;
+  --warning: #fbbf24;
+  --error: #ef4444;
+}
+
+body {
+  background-color: var(--bg);
+  color: var(--text-primary);
+  font-family: "Inter", sans-serif;
+}
