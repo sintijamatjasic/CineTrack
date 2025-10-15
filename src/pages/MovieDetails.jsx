@@ -1,16 +1,120 @@
-import { useParams, useNavigate } from "react-router-dom"; // ← Add useNavigate
-import { mockMovies } from "../assets/data";
+import { useParams, useNavigate } from "react-router-dom";
+import { useState, useEffect } from "react";
 import MovieCard from "../components/MovieCard";
+
+const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
+const BASE_URL = "https://api.themoviedb.org/3";
 
 function MovieDetails() {
   const { id } = useParams();
-  const navigate = useNavigate(); // ← Create navigate function
-  const movie = mockMovies.find((m) => m.id === Number(id));
+  const navigate = useNavigate();
 
-  if (!movie) {
+  const [movie, setMovie] = useState(null);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+
+  const [similarMovies, setSimilarMovies] = useState([]);
+  const [similarLoading, setSimilarLoading] = useState(false);
+
+  useEffect(() => {
+    const fetchMovie = async () => {
+      setLoading(true);
+      setError(null);
+
+      try {
+        const response = await fetch(
+          `${BASE_URL}/movie/${id}?api_key=${API_KEY}`
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch movie details");
+        }
+
+        const data = await response.json();
+
+        const transformedMovie = {
+          id: data.id,
+          title: data.title,
+          poster: data.poster_path
+            ? `https://image.tmdb.org/t/p/w500${data.poster_path}`
+            : "https://via.placeholder.com/500x750?text=No+Poster",
+          rating: data.vote_average.toFixed(1),
+          releaseDate: data.release_date,
+          runtime: data.runtime,
+          overview: data.overview,
+        };
+
+        setMovie(transformedMovie);
+      } catch (err) {
+        setError(err.message);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchMovie();
+  }, [id]);
+
+  useEffect(() => {
+    const fetchSimilarMovies = async () => {
+      if (!movie) return;
+
+      setSimilarLoading(true);
+
+      try {
+        const response = await fetch(
+          `${BASE_URL}/movie/${id}/similar?api_key=${API_KEY}`
+        );
+
+        if (!response.ok) {
+          throw new Error("Failed to fetch similar movies");
+        }
+
+        const data = await response.json();
+
+        const transformedMovies = data.results.slice(0, 3).map((m) => ({
+          id: m.id,
+          title: m.title,
+          poster: m.poster_path
+            ? `https://image.tmdb.org/t/p/w500${m.poster_path}`
+            : "https://via.placeholder.com/500x750?text=No+Poster",
+          rating: m.vote_average.toFixed(1),
+        }));
+
+        setSimilarMovies(transformedMovies);
+      } catch (err) {
+        console.error("Error fetching similar movies:", err);
+        setSimilarMovies([]);
+      } finally {
+        setSimilarLoading(false);
+      }
+    };
+
+    fetchSimilarMovies();
+  }, [movie, id]);
+
+  if (loading) {
     return (
       <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
-        <p className="text-[var(--text-primary)] text-xl">Movie not found.</p>
+        <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-[var(--accent)]"></div>
+      </div>
+    );
+  }
+
+  if (error || !movie) {
+    return (
+      <div className="min-h-screen bg-[var(--bg)] flex items-center justify-center">
+        <div className="text-center">
+          <p className="text-red-500 text-xl mb-2">
+            ⚠️ {error || "Movie not found"}
+          </p>
+          <button
+            onClick={() => navigate(-1)}
+            className="text-[var(--accent)] hover:underline"
+          >
+            Go Back
+          </button>
+        </div>
       </div>
     );
   }
@@ -52,7 +156,8 @@ function MovieDetails() {
         <div className="md:col-span-2 flex flex-col gap-4">
           <h1 className="text-4xl font-bold">{movie.title}</h1>
           <p className="text-[var(--text-secondary)]">
-            Release Date: {movie.releaseDate || "2024"} | Runtime: 2h 10m
+            Release Date: {movie.releaseDate || "N/A"} | Runtime:{" "}
+            {movie.runtime ? `${movie.runtime} min` : "N/A"}
           </p>
 
           <p className="text-[var(--text-secondary)]">⭐ {movie.rating}</p>
@@ -60,8 +165,7 @@ function MovieDetails() {
           <div>
             <h2 className="text-xl font-semibold mt-4 mb-2">Overview</h2>
             <p className="leading-relaxed text-[var(--text-primary)]">
-              {movie.overview ||
-                "This is a placeholder overview for the movie. Replace it with real API data later."}
+              {movie.overview || "No overview available."}
             </p>
           </div>
 
@@ -84,14 +188,21 @@ function MovieDetails() {
       {/* You Might Also Like */}
       <div className="max-w-5xl mx-auto mt-20">
         <h2 className="text-2xl font-semibold mb-6">You Might Also Like</h2>
-        <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
-          {mockMovies
-            .filter((m) => m.id !== Number(id))
-            .slice(0, 3)
-            .map((m) => (
+        {similarLoading ? (
+          <div className="flex justify-center py-10">
+            <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-[var(--accent)]"></div>
+          </div>
+        ) : similarMovies.length > 0 ? (
+          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-6">
+            {similarMovies.map((m) => (
               <MovieCard key={m.id} {...m} />
             ))}
-        </div>
+          </div>
+        ) : (
+          <p className="text-[var(--text-secondary)]">
+            No similar movies found.
+          </p>
+        )}
       </div>
     </div>
   );
