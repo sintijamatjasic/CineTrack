@@ -1,6 +1,7 @@
 import { useState, useEffect } from "react"; // ADD useEffect
 import MovieList from "../components/MovieList";
 import FeaturedMovies from "../components/FeaturedMovies";
+import { Wand } from "lucide-react";
 
 const API_KEY = import.meta.env.VITE_TMDB_API_KEY;
 const BASE_URL = "https://api.themoviedb.org/3";
@@ -88,9 +89,8 @@ function Home() {
         poster: movie.poster_path
           ? `https://image.tmdb.org/t/p/w500${movie.poster_path}`
           : "https://via.placeholder.com/500x750?text=No+Poster",
-        rating: movie.vote_average.toFixed(1),
+        rating: movie.vote_average ? movie.vote_average.toFixed(1) : "N/A",
       }));
-
       setMovies(transformedMovies);
     } catch (err) {
       setError(err.message);
@@ -122,7 +122,7 @@ function Home() {
               type="text"
               placeholder="Search for movies..."
               value={query}
-              onChange={(e) => setQuery(e.target.value)} // This now triggers automatic search
+              onChange={(e) => setQuery(e.target.value)}
               className="w-full px-6 py-4 text-lg bg-[var(--surface)] border-2 border-[var(--divider)] rounded-xl text-[var(--text-primary)] placeholder-[var(--text-secondary)] focus:outline-none focus:border-[var(--accent)] focus:shadow-lg focus:shadow-[var(--accent)]/20 transition-all duration-400"
             />
             {query && (
@@ -143,7 +143,6 @@ function Home() {
         </form>
       </div>
 
-      {/* Search Results - Keep your existing conditional rendering */}
       <div className="mx-auto mt-20">
         {loading ? (
           <div className="flex justify-center items-center py-20">
